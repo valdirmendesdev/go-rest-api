@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"github.com/valdirmendesdev/go-rest-api/internal/database"
+	"github.com/valdirmendesdev/go-rest-api/internal/services"
 	"net/http"
 
 	transportHTTP "github.com/valdirmendesdev/go-rest-api/internal/transport/http"
@@ -15,7 +17,19 @@ type App struct{}
 func (app *App) Run() error {
 	fmt.Println("Setting up the App")
 
-	handler := transportHTTP.NewHandler()
+	db, err := database.NewDatabase()
+	if err != nil {
+		return err
+	}
+
+	err = database.MigrateDB(db)
+	if err != nil {
+		return err
+	}
+
+	commentService := services.NewCommentService(db)
+
+	handler := transportHTTP.NewHandler(commentService)
 	handler.SetupRoutes()
 
 	if err := http.ListenAndServe(":8080", handler.Router); err != nil {
